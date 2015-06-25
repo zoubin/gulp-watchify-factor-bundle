@@ -31,7 +31,7 @@ var bundle = wrap(b,
         return bundleStream
             .on('error', gutil.log.bind(gutil, 'Browserify Error'))
 
-            // `optional`. use `buffer()` to make `stream not support` gulp plugins work
+            // `optional`. make `stream not support` gulp plugins work
             .pipe(buffer())
 
             // use more gulp plugins here
