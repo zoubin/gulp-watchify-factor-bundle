@@ -19,6 +19,8 @@ var b = browserify({
     entries: entries,
 });
 
+// add transforms, plugins here
+
 var bundle = wrap(b,
     // options for factor bundle.
     {
@@ -26,7 +28,7 @@ var bundle = wrap(b,
         outputs: [ 'blue.js', 'red.js' ],
         common: 'common.js',
     },
-    // more transforms. Should always return a stream.
+    // post bundle transforms. Should always return a stream.
     function (bundleStream) {
         return bundleStream
             .on('error', gutil.log.bind(gutil, 'Browserify Error'))
@@ -48,7 +50,9 @@ gulp.task('default', bundle);
 gulp.task('watch', wrap.watch(bundle));
 
 function src() {
-    return path.resolve.bind(path, __dirname, 'src/page').apply(null, arguments);
+    return path.resolve
+        .bind(path, __dirname, 'src/page')
+        .apply(null, arguments);
 }
 ```
 
