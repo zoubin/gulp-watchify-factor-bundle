@@ -37,7 +37,14 @@ module.exports = function (b, opts, moreTransforms) {
     return bundle;
 
     function getOutputs(entries) {
-        return getOutputFiles(entries).map(xbind(source).first());
+        return getOutputFiles(entries).map(function (e) {
+            var s = e;
+            if (typeof e === 'string') {
+                s = source(e);
+                s.file = e;
+            }
+            return s;
+        });
     }
 
     function bundle() {
