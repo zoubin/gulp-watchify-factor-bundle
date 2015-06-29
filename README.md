@@ -104,7 +104,9 @@ default: `factor-bundle`
 
 Plugin to replace [factor-bundle](https://www.npmjs.com/package/factor-bundle).
 
-## watchBundle = wrap.watch(bundle)
+## watchBundle = wrap.watch(bundle, watchifyOpts)
+
+`b._options.cache` and `b._options.pachageCache` will be added if not exiting.
 
 Return a watchify gulp task callback.
 

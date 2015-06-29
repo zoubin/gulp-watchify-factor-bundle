@@ -83,12 +83,15 @@ module.exports = function (b, opts, moreTransforms) {
     }
 };
 
-module.exports.watch = function (bundle) {
-    if (!bundle._b) {
+module.exports.watch = function (bundle, watchifyOpts) {
+    var b = bundle._b;
+    if (!b) {
         return bundle;
     }
     return function () {
-        var b = watchify(bundle._b);
+        b._options.cache = b._options.cache || {};
+        b._options.packageCache = b._options.packageCache || {};
+        b = watchify(b, watchifyOpts);
         // on any dep update, runs the bundler, without `cb`
         b.on('update', xbind(bundle).xargs());
         return bundle.apply(this, arguments);
