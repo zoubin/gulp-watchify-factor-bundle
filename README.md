@@ -1,5 +1,5 @@
 # gulp-watchify-factor-bundle
-Use watchify and factor-bundle in gulp
+Use [watchify](https://www.npmjs.com/package/watchify) and [factor-bundle](https://www.npmjs.com/package/factor-bundle) in gulp
 
 ## Usage
 
@@ -96,6 +96,13 @@ Type: `Array`
 `required`
 
 `entries` should be the same with `b._options.entries`.
+
+#### factor
+
+Type: `Function`
+default: `factor-bundle`
+
+Plugin to replace [factor-bundle](https://www.npmjs.com/package/factor-bundle).
 
 ## watchBundle = wrap.watch(bundle)
 
