@@ -6,7 +6,7 @@ Use [watchify](https://www.npmjs.com/package/watchify) and [factor-bundle](https
 gulpfile.js:
 
 ```javascript
-var wrap = require('gulp-watchify-factor-bundle');
+var wrap = require('..');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var path = require('path');
@@ -14,33 +14,37 @@ var buffer = require('vinyl-buffer');
 var uglify = require('gulp-uglify');
 var browserify = require('browserify');
 
-var entries = [ src('blue/index.js'), src('red/index.js') ];
+var fixtures = path.resolve.bind(path, __dirname, 'src', 'page');
+
+var entries = [
+  fixtures('blue/index.js'),
+  fixtures('red/index.js')
+];
+
 var b = browserify({
-    entries: entries,
+  entries: entries,
 });
 
-// add transforms, plugins here
-
 var bundle = wrap(b,
-    // options for factor bundle.
-    {
-        entries: entries,
-        outputs: [ 'blue.js', 'red.js' ],
-        common: 'common.js',
-    },
-    // post bundle transforms. Should always return a stream.
-    function (bundleStream) {
-        return bundleStream
-            .on('error', gutil.log.bind(gutil, 'Browserify Error'))
+  // options for factor bundle.
+  {
+    entries: entries,
+    outputs: [ 'blue.js', 'red.js' ],
+    common: 'common.js',
+  },
+  // more transforms. Should always return a stream.
+  function (bundleStream) {
+    return bundleStream
+      .on('error', gutil.log.bind(gutil, 'Browserify Error'))
 
-            // `optional`. make `stream not support` gulp plugins work
-            .pipe(buffer())
+      // `optional`. use `buffer()` to make `stream not support` gulp plugins work
+      .pipe(buffer())
 
-            // use more gulp plugins here
-            .pipe(uglify())
+      // use more gulp plugins here
+      .pipe(uglify())
 
-            .pipe(gulp.dest('./build/js'))
-    }
+      .pipe(gulp.dest('./build'))
+  }
 );
 
 b.on('log', gutil.log);
@@ -49,11 +53,6 @@ gulp.task('default', bundle);
 // watchify bundle task
 gulp.task('watch', wrap.watch(bundle));
 
-function src() {
-    return path.resolve
-        .bind(path, __dirname, 'src/page')
-        .apply(null, arguments);
-}
 ```
 
 ## bundle = wrap(b, factorOpts, task)
@@ -69,9 +68,7 @@ Type: `Browserify`
 
 Type: `Object`
 
-`factorOpt` will be passed to `factor-bundle`.
-This option object  has some extra features:
-
+`factorOpt` will be passed to [post-factor-bundle](https://github.com/zoubin/post-factor-bundle).
 
 #### common
 
@@ -82,27 +79,17 @@ The name of the common bundle.
 
 #### outputs
 
-Type: `Array`, `Function`
-
-`required`
-
-If `Array`, it should pair with `facotrOpts.entries`.
-If `Function`, it receives the resolved `facotrOpts.entries` array, and should return the paired `outputs`.
-
-#### entries
-
 Type: `Array`
 
 `required`
 
-`entries` should be the same with `b._options.entries`.
+Paths of output files.
+It should pair with `facotrOpts.entries`.
 
-#### factor
+#### more
 
-Type: `Function`
-default: `factor-bundle`
+See [post-factor-bundle](https://github.com/zoubin/post-factor-bundle).
 
-Plugin to replace [factor-bundle](https://www.npmjs.com/package/factor-bundle).
 
 ## watchBundle = wrap.watch(bundle, watchifyOpts)
 

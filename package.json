@@ -3,9 +3,6 @@
   "version": "0.1.2",
   "description": "Use watchify and factor-bundle in gulp",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zoubin/gulp-watchify-factor-bundle.git"
@@ -23,15 +20,14 @@
   "homepage": "https://github.com/zoubin/gulp-watchify-factor-bundle#readme",
   "dependencies": {
     "end-of-stream": "^1.1.0",
-    "factor-bundle": "^2.4.1",
+    "post-factor-bundle": "^1.0.0",
     "merge-stream": "^0.1.7",
     "util-mix": "^1.2.2",
     "vinyl-source-stream": "^1.1.0",
-    "watchify": "^3.2.3",
-    "xbind": "^2.0.0"
+    "watchify": "^3.2.3"
   },
   "devDependencies": {
-    "browserify": "^10.2.4",
+    "browserify": "^11.0.1",
     "gulp": "^3.9.0",
     "gulp-uglify": "^1.2.0",
     "gulp-util": "^3.0.6",

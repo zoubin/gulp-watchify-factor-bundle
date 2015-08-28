@@ -1,100 +1,73 @@
 var source = require('vinyl-source-stream');
-var xbind = require('xbind');
-var factor = require('factor-bundle');
+var factor = require('post-factor-bundle');
 var merge = require('merge-stream');
 var watchify = require('watchify');
 var eos = require('end-of-stream');
 var mix = require('util-mix');
+var noop = function () {};
 
 module.exports = function (b, opts, moreTransforms) {
-    var entries = opts.entries;
-    var getOutputFiles = typeof opts.outputs === 'function'
-        ? opts.outputs
-        : xbind.identity(
-            [].concat(opts.outputs).filter(Boolean)
-        );
-
-    var pipelines = [];
-    var files = [];
-
-    b.on('factor.pipeline', function (file, pipeline) {
-        files.push(file);
-        if (pipelines.push(pipeline) === entries.length) {
-            b.emit('factor.pipelines', files, pipelines);
+  if (typeof opts === 'function') {
+    moreTransforms = opts;
+    opts = {};
+  }
+  opts = opts || {};
+  var createWriteStream = opts.createWriteStream || source;
+  b.plugin(
+    factor,
+    mix(
+      {},
+      opts,
+      {
+        outputs: function (entries, basedir) {
+          return opts.outputs.map(function (e) {
+            return createWriteStream(e, basedir);
+          });
         }
+      }
+    )
+  );
+
+  bundle._b = b;
+
+  return bundle;
+
+  function bundle(cb) {
+    var common = b.bundle()
+      .on('error', function (err) {
+        bundleStream.emit('error', err);
+      })
+      .pipe(
+        createWriteStream(opts.common || 'common.js')
+      )
+    var bundleStream = merge(common)
+      .on('error', function (err) {
+        delete err.stream;
+      });
+
+    b.once('factor.pipelines', function (f, p, outputs) {
+      bundleStream.add(outputs);
+      var stream = bundleStream;
+      if (typeof moreTransforms === 'function') {
+        stream = moreTransforms(bundleStream);
+      }
+      eos(stream, cb || noop);
     });
-    b.on('factor.pipelines.reset', function () {
-        files.length = 0;
-        pipelines.length = 0;
-    });
 
-    b.plugin(opts.factor || factor, mix({}, opts, {
-        outputs: getOutputs(entries),
-    }));
-
-    bundle._b = b;
-
-    return bundle;
-
-    function getOutputs(entries) {
-        return getOutputFiles(entries).map(function (e) {
-            var s = e;
-            if (typeof e === 'string') {
-                s = source(e);
-                s.file = e;
-            }
-            return s;
-        });
-    }
-
-    function bundle() {
-        return new Promise(function (resolve, reject) {
-            var common = b.bundle().pipe(source(opts.common || 'common.js'));
-
-            if (pipelines.length === entries.length) {
-                hook(files, pipelines);
-            }
-            else {
-                b.once('factor.pipelines', hook);
-            }
-
-            function hook(files, pipelines) {
-                var outputs = getOutputs(files);
-
-                pipelines.forEach(function (pipeline, i) {
-                    // we have to cut off the old outputs
-                    pipeline.unpipe();
-                    pipeline.pipe(outputs[i]);
-                });
-                b.emit('factor.pipelines.reset');
-
-                var stream = merge(outputs.concat(common));
-                if (typeof moreTransforms === 'function') {
-                    stream = moreTransforms(stream);
-                }
-                eos(stream, function (err) {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve();
-                });
-            }
-        });
-    }
+  }
 };
 
 module.exports.watch = function (bundle, watchifyOpts) {
-    var b = bundle._b;
-    if (!b) {
-        return bundle;
-    }
-    return function () {
-        b._options.cache = b._options.cache || {};
-        b._options.packageCache = b._options.packageCache || {};
-        b = watchify(b, watchifyOpts);
-        // on any dep update, runs the bundler, without `cb`
-        b.on('update', xbind(bundle).xargs());
-        return bundle.apply(this, arguments);
-    };
+  var b = bundle._b;
+  return function (cb) {
+    b._options.cache = b._options.cache || {};
+    b._options.packageCache = b._options.packageCache || {};
+    b = watchify(b, watchifyOpts);
+    // on any dep update, runs the bundler, without `cb`
+    b.on('update', function () {
+      bundle();
+    });
+    bundle();
+  };
 };
 
