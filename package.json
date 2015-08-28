@@ -20,7 +20,7 @@
   "homepage": "https://github.com/zoubin/gulp-watchify-factor-bundle#readme",
   "dependencies": {
     "end-of-stream": "^1.1.0",
-    "post-factor-bundle": "^1.0.0",
+    "factor-bundle": "^2.5.0",
     "merge-stream": "^0.1.7",
     "util-mix": "^1.2.2",
     "vinyl-source-stream": "^1.1.0",

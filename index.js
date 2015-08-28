@@ -1,9 +1,9 @@
 var source = require('vinyl-source-stream');
-var factor = require('post-factor-bundle');
+var factor = require('factor-bundle');
 var merge = require('merge-stream');
 var watchify = require('watchify');
 var eos = require('end-of-stream');
-var mix = require('util-mix');
+var pick = require('util-mix').pick;
 var noop = function () {};
 
 module.exports = function (b, opts, moreTransforms) {
@@ -12,16 +12,19 @@ module.exports = function (b, opts, moreTransforms) {
     opts = {};
   }
   opts = opts || {};
-  var createWriteStream = opts.createWriteStream || source;
+  var bundleStream;
+
   b.plugin(
     factor,
-    mix(
-      {},
+    pick(
+      ['outputs', 'entries', 'threshold', 'basedir'],
       opts,
       {
-        outputs: function (entries, basedir) {
-          return opts.outputs.map(function (e) {
-            return createWriteStream(e, basedir);
+        outputs: function () {
+          return opts.outputs.map(function (o) {
+            var s = source(o);
+            bundleStream.add(s);
+            return s;
           });
         }
       }
@@ -38,22 +41,18 @@ module.exports = function (b, opts, moreTransforms) {
         bundleStream.emit('error', err);
       })
       .pipe(
-        createWriteStream(opts.common || 'common.js')
+        source(opts.common || 'common.js')
       )
-    var bundleStream = merge(common)
+    bundleStream = merge(common)
       .on('error', function (err) {
         delete err.stream;
       });
 
-    b.once('factor.pipelines', function (f, p, outputs) {
-      bundleStream.add(outputs);
-      var stream = bundleStream;
-      if (typeof moreTransforms === 'function') {
-        stream = moreTransforms(bundleStream);
-      }
-      eos(stream, cb || noop);
-    });
-
+    var stream = bundleStream;
+    if (typeof moreTransforms === 'function') {
+      stream = moreTransforms(bundleStream);
+    }
+    eos(stream, cb || noop);
   }
 };
 

@@ -1,12 +1,12 @@
 # gulp-watchify-factor-bundle
-Use [watchify](https://www.npmjs.com/package/watchify) and [factor-bundle](https://www.npmjs.com/package/factor-bundle) in gulp
+Use [watchify](https://www.npmjs.com/package/watchify) and [factor-bundle](https://www.npmjs.com/package/factor-bundle) in gulp.
 
 ## Usage
 
 gulpfile.js:
 
 ```javascript
-var wrap = require('..');
+var bundler = require('gulp-watchify-factor-bundle');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var path = require('path');
@@ -25,12 +25,12 @@ var b = browserify({
   entries: entries,
 });
 
-var bundle = wrap(b,
+var bundle = bundler(b,
   // options for factor bundle.
   {
     entries: entries,
     outputs: [ 'blue.js', 'red.js' ],
-    common: 'common.js',
+    common: 'bundle.js',
   },
   // more transforms. Should always return a stream.
   function (bundleStream) {
@@ -51,11 +51,12 @@ b.on('log', gutil.log);
 // normal bundle task
 gulp.task('default', bundle);
 // watchify bundle task
-gulp.task('watch', wrap.watch(bundle));
+gulp.task('watch', bundler.watch(bundle));
+
 
 ```
 
-## bundle = wrap(b, factorOpts, task)
+## bundle = bundler(b, factorOpts, task)
 
 Return a new gulp task callback.
 
@@ -68,7 +69,7 @@ Type: `Browserify`
 
 Type: `Object`
 
-`factorOpt` will be passed to [post-factor-bundle](https://github.com/zoubin/post-factor-bundle).
+`factorOpt` will be passed to [factor-bundle](https://www.npmjs.com/package/factor-bundle).
 
 #### common
 
@@ -84,18 +85,20 @@ Type: `Array`
 `required`
 
 Paths of output files.
+Relative to `DEST` in `gulp.dest(DEST)`.
 It should pair with `facotrOpts.entries`.
 
-#### more
+#### theshold
 
-See [post-factor-bundle](https://github.com/zoubin/post-factor-bundle).
+Type: `Number`, `Function`
 
+See [factor-bundle](https://www.npmjs.com/package/factor-bundle).
 
-## watchBundle = wrap.watch(bundle, watchifyOpts)
+## watchBundle = bundler.watch(bundle, watchifyOpts)
 
 `b._options.cache` and `b._options.pachageCache` will be added if not exiting.
 
 Return a watchify gulp task callback.
 
-`bundle` is created with `wrap`.
+`bundle` is created with `bundler`.
 

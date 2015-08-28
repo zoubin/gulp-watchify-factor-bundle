@@ -1,4 +1,4 @@
-var wrap = require('..');
+var bundler = require('..');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var path = require('path');
@@ -17,12 +17,12 @@ var b = browserify({
   entries: entries,
 });
 
-var bundle = wrap(b,
+var bundle = bundler(b,
   // options for factor bundle.
   {
     entries: entries,
     outputs: [ 'blue.js', 'red.js' ],
-    common: 'common.js',
+    common: 'bundle.js',
   },
   // more transforms. Should always return a stream.
   function (bundleStream) {
@@ -43,5 +43,5 @@ b.on('log', gutil.log);
 // normal bundle task
 gulp.task('default', bundle);
 // watchify bundle task
-gulp.task('watch', wrap.watch(bundle));
+gulp.task('watch', bundler.watch(bundle));
 
