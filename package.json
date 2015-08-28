@@ -1,6 +1,6 @@
 {
   "name": "gulp-watchify-factor-bundle",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Use watchify and factor-bundle in gulp",
   "main": "index.js",
   "repository": {
