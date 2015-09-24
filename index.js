@@ -14,23 +14,25 @@ module.exports = function (b, opts, moreTransforms) {
   opts = opts || {};
   var bundleStream;
 
-  b.plugin(
-    factor,
-    pick(
-      ['outputs', 'entries', 'threshold', 'basedir'],
-      opts,
-      {
-        outputs: function () {
-          return opts.outputs.map(function (o) {
-            var s = source(o);
-            bundleStream.add(s);
-            return s;
-          });
+  if (!opts.disableFactoring) {
+    b.plugin(
+      factor,
+      pick(
+        ['outputs', 'entries', 'threshold', 'basedir'],
+        opts,
+        {
+          outputs: function () {
+            return opts.outputs.map(function (o) {
+              var s = source(o);
+              bundleStream.add(s);
+              return s;
+            });
+          }
         }
-      }
-    )
-  );
-
+      )
+    );
+  }
+  
   bundle._b = b;
 
   return bundle;
