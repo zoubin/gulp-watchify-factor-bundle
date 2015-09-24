@@ -88,11 +88,17 @@ Paths of output files.
 Relative to `DEST` in `gulp.dest(DEST)`.
 It should pair with `facotrOpts.entries`.
 
-#### theshold
+#### threshold
 
 Type: `Number`, `Function`
 
 See [factor-bundle](https://www.npmjs.com/package/factor-bundle).
+
+#### disableFactoring
+
+Type: `Boolean`
+
+If set to true, do not install the factor-bundle plugin at all.
 
 ## watchBundle = bundler.watch(bundle, watchifyOpts)
 
