@@ -64,9 +64,9 @@ module.exports.watch = function (bundle, watchifyOpts) {
     b = watchify(b, watchifyOpts);
     // on any dep update, runs the bundler, without `cb`
     b.on('update', function () {
-      bundle();
+      bundle(cb);
     });
-    bundle();
+    bundle(cb);
   };
 };
 
