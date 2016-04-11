@@ -27,7 +27,7 @@
   "dependencies": {
     "browserify": "^13.0.0",
     "factor-bundle": "^2.5.0",
-    "merge-stream": "^0.1.7",
+    "merge-stream": "^1.0.0",
     "vinyl-fs": "^2.4.3",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.2.3"

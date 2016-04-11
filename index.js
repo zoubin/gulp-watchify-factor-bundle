@@ -54,7 +54,7 @@ function bundler(b, opts) {
         outputStreams.on('data', function (file) {
           self.push(file)
         })
-        next()
+        outputStreams.on('end', next)
       }
     ))
   })
