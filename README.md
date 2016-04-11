@@ -7,6 +7,8 @@
 
 A sugar wrapper for [browserify], [watchify] and [factor-bundle] to work with [gulp].
 
+The main ideas are borrowed from [reduce-js].
+
 ## Usage
 
 gulpfile.js:
@@ -126,3 +128,4 @@ and emit a `bundle` event whenever `b.bundle()` called.
 [factor-bundle]: https://www.npmjs.com/package/factor-bundle
 [browserify]: https://www.npmjs.com/package/browserify
 [gulp]: https://www.npmjs.com/package/gulp
+[reduce-js]: https://www.npmjs.com/package/reduce-js
