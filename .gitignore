@@ -1,4 +1,6 @@
 /node_modules/
-/example/build
 .DS_Store
 npm-debug.log
+build/
+coverage/
+.nyc_output/

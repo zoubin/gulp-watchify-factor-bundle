@@ -1,104 +1,128 @@
 # gulp-watchify-factor-bundle
-Use [watchify](https://www.npmjs.com/package/watchify) and [factor-bundle](https://www.npmjs.com/package/factor-bundle) in gulp.
+[![version](https://img.shields.io/npm/v/gulp-watchify-factor-bundle.svg)](https://www.npmjs.org/package/gulp-watchify-factor-bundle)
+[![status](https://travis-ci.org/zoubin/gulp-watchify-factor-bundle.svg)](https://travis-ci.org/zoubin/gulp-watchify-factor-bundle)
+[![coverage](https://img.shields.io/coveralls/zoubin/gulp-watchify-factor-bundle.svg)](https://coveralls.io/github/zoubin/gulp-watchify-factor-bundle)
+[![dependencies](https://david-dm.org/zoubin/gulp-watchify-factor-bundle.svg)](https://david-dm.org/zoubin/gulp-watchify-factor-bundle)
+[![devDependencies](https://david-dm.org/zoubin/gulp-watchify-factor-bundle/dev-status.svg)](https://david-dm.org/zoubin/gulp-watchify-factor-bundle#info=devDependencies)
+
+A sugar wrapper for [browserify], [watchify] and [factor-bundle] to work with [gulp].
 
 ## Usage
 
 gulpfile.js:
 
 ```javascript
-var bundler = require('gulp-watchify-factor-bundle');
-var gulp = require('gulp');
-var gutil = require('gulp-util');
-var path = require('path');
-var buffer = require('vinyl-buffer');
-var uglify = require('gulp-uglify');
-var browserify = require('browserify');
+var reduce = require('gulp-watchify-factor-bundle')
+var gulp = require('gulp')
+var path = require('path')
+var buffer = require('vinyl-buffer')
+var uglify = require('gulp-uglify')
+var del = require('del')
 
-var fixtures = path.resolve.bind(path, __dirname, 'src', 'page');
+gulp.task('clean', function () {
+  return del('build')
+})
 
-var entries = [
-  fixtures('blue/index.js'),
-  fixtures('red/index.js')
-];
+gulp.task('build', ['clean'], function () {
+  var basedir = path.join(__dirname, 'src')
 
-var b = browserify({
-  entries: entries,
-});
+  // Create a browserify instance
+  // same with `browserify(opts)`
+  var b = reduce.create({ basedir: basedir })
 
-var bundle = bundler(b,
-  // options for factor bundle.
-  {
-    entries: entries,
-    outputs: [ 'blue.js', 'red.js' ],
-    common: 'bundle.js',
-  },
-  // more transforms. Should always return a stream.
-  function (bundleStream) {
-    return bundleStream
-      .on('error', gutil.log.bind(gutil, 'Browserify Error'))
+  // find entries
+  // same with gulp.src()
+  return reduce.src('page/**/index.js', { cwd: basedir })
+    // apply `factor-bundle`
+    // and call b.bundle() which produces a vinyl stream now
+    .pipe(reduce.bundle(b, { common: 'common.js' }))
 
-      // `optional`. use `buffer()` to make `stream not support` gulp plugins work
-      .pipe(buffer())
+    // apply gulp plugins to process the vinyl stream
+    .pipe(buffer())
+    .pipe(uglify())
 
-      // use more gulp plugins here
-      .pipe(uglify())
+    // same with gulp.dest
+    .pipe(reduce.dest('build'))
+})
 
-      .pipe(gulp.dest('./build'))
-  }
-);
+gulp.task('watch', ['clean'], function () {
+  var basedir = path.join(__dirname, 'src')
 
-b.on('log', gutil.log);
-// normal bundle task
-gulp.task('default', bundle);
-// watchify bundle task
-gulp.task('watch', bundler.watch(bundle));
+  // Create a browserify instance
+  // same with `browserify(opts)`
+  var b = reduce.create({ basedir: basedir })
+
+  b.on('log', console.log.bind(console))
+
+  // find entries
+  // same with gulp.src()
+  return reduce.src('page/**/index.js', { cwd: basedir })
+    // apply `factor-bundle` and `watchify`
+    .pipe(reduce.watch(b, { common: 'common.js' }))
+    // whenever `b.bundle()` is called,
+    // event 'bundle' is fired
+    .on('bundle', function (vinylStream) {
+      // vinylStream = b.bundle()
+      vinylStream
+        // apply gulp plugins to process the vinyl stream
+        .pipe(buffer())
+        .pipe(uglify())
+        // same with gulp.dest
+        .pipe(reduce.dest('build'))
+    })
+})
 
 
 ```
 
-## bundle = bundler(b, factorOpts, task)
+## Exports
 
-Return a new gulp task callback.
+### create()
+Same with the [browserify] constructor.
 
-### b
+## bundle(b, bundleOptions)
+A gulp plugin to use [browserify] with [factor-bundle],
+and produces a vinyl stream.
 
-Type: `Browserify`
+**b**
 
+The browserify instance.
 
-### factorOpts
+**bundleOptions**
 
-Type: `Object`
+Options for [factor-bundle].
 
-`factorOpt` will be passed to [factor-bundle](https://www.npmjs.com/package/factor-bundle).
+`bundleOptions.common` specifies the path to the common bundle.
+All other options are exactly the same with those consumed by [factor-bundle].
 
-#### common
+**NOTE**
 
-Type: `String`
-Default: `common.js`
+`bundleOptions.outputs` must be an array of file paths.
+However, if not specified, a new bundle is created for each entry,
+with the same path with the entry.
 
-The name of the common bundle.
+## watch(b, bundleOptions, watchifyOptions)
+A gulp plugin to use [browserify] with [factor-bundle] and [watchify].
 
-#### outputs
+**b**
 
-Type: `Array`
+The browserify instance.
 
-`required`
+**bundleOptions**
 
-Paths of output files.
-Relative to `DEST` in `gulp.dest(DEST)`.
-It should pair with `facotrOpts.entries`.
+Options for [factor-bundle].
 
-#### theshold
+**watchOptions**
 
-Type: `Number`, `Function`
+Options for [watchify].
 
-See [factor-bundle](https://www.npmjs.com/package/factor-bundle).
+**NOTE**
+This method creates a transform to process the entry stream,
+and emit a `bundle` event whenever `b.bundle()` called.
 
-## watchBundle = bundler.watch(bundle, watchifyOpts)
+`reduce.watch().on('bundle', vinylStream => {})`
 
-`b._options.cache` and `b._options.pachageCache` will be added if not exiting.
-
-Return a watchify gulp task callback.
-
-`bundle` is created with `bundler`.
-
+[watchify]: https://www.npmjs.com/package/watchify
+[factor-bundle]: https://www.npmjs.com/package/factor-bundle
+[browserify]: https://www.npmjs.com/package/browserify
+[gulp]: https://www.npmjs.com/package/gulp
