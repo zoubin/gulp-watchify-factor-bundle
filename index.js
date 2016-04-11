@@ -1,72 +1,157 @@
-var source = require('vinyl-source-stream');
-var factor = require('factor-bundle');
-var merge = require('merge-stream');
-var watchify = require('watchify');
-var eos = require('end-of-stream');
-var pick = require('util-mix').pick;
-var noop = function () {};
+var vfs = require('vinyl-fs')
+var watchify = require('watchify')
+var merge = require('merge-stream')
+var factor = require('factor-bundle')
+var source = require('vinyl-source-stream')
+var Transform = require('stream').Transform
 
-module.exports = function (b, opts, moreTransforms) {
-  if (typeof opts === 'function') {
-    moreTransforms = opts;
-    opts = {};
+function bundler(b, opts) {
+  opts = opts || {}
+
+  var commonFile = opts.common || 'bundle.js'
+  if (!Array.isArray(opts.entries)) {
+    throw new Error('No entries specified for bundler')
   }
-  opts = opts || {};
-  var bundleStream;
+  var outputs = opts.outputs
+  if (!Array.isArray(outputs)) {
+    outputs = opts.entries
+  }
 
-  b.plugin(
-    factor,
-    pick(
-      ['outputs', 'entries', 'threshold', 'basedir'],
-      opts,
-      {
-        outputs: function () {
-          return opts.outputs.map(function (o) {
-            var s = source(o);
-            bundleStream.add(s);
-            return s;
-          });
-        }
-      }
-    )
-  );
+  var outputStreams
+  var bundleIndex = 0
+  var outputIndex = 0
+  var basedir = opts.basedir || b._options.basedir || process.cwd()
+  opts.basedir = basedir
 
-  bundle._b = b;
+  opts.outputs = function () {
+    var factors = outputs.map(function (o) {
+      return source(o, basedir)
+    })
 
-  return bundle;
-
-  function bundle(cb) {
-    var common = b.bundle()
-      .on('error', function (err) {
-        bundleStream.emit('error', err);
-      })
-      .pipe(
-        source(opts.common || 'common.js')
-      )
-    bundleStream = merge(common)
-      .on('error', function (err) {
-        delete err.stream;
-      });
-
-    var stream = bundleStream;
-    if (typeof moreTransforms === 'function') {
-      stream = moreTransforms(bundleStream);
+    if (++outputIndex === bundleIndex) {
+      outputStreams.add(factors)
+      outputStreams.wait.end()
     }
-    eos(stream, cb || noop);
+    return factors
   }
-};
 
-module.exports.watch = function (bundle, watchifyOpts) {
-  var b = bundle._b;
-  return function (cb) {
-    b._options.cache = b._options.cache || {};
-    b._options.packageCache = b._options.packageCache || {};
-    b = watchify(b, watchifyOpts);
-    // on any dep update, runs the bundler, without `cb`
-    b.on('update', function () {
-      bundle();
-    });
-    bundle();
-  };
-};
+  b.on('bundle', function () {
+    ++bundleIndex
+
+    var common = source(commonFile)
+    var wait = through()
+    outputStreams = merge([common, wait])
+    outputStreams.wait = wait
+
+    b.pipeline.push(through(
+      function (buf, enc, next) {
+        common.write(buf)
+        next()
+      },
+      function (next) {
+        common.end()
+        var self = this
+        outputStreams.on('data', function (file) {
+          self.push(file)
+        })
+        outputStreams.on('end', next)
+      }
+    ))
+  })
+
+  b.plugin(factor, opts)
+}
+
+function watcher(b, wopts) {
+  if (!b.close) {
+    // Use watchify by default
+    // If watchify used first, this line will be skipped
+    b.plugin(watchify, wopts)
+  }
+  var close = b.close
+  b.close = function () {
+    close()
+    b.emit('close')
+  }
+  b.start = function () {
+    b.emit('bundle-stream', b.bundle())
+  }
+  b.on('update', b.start)
+}
+
+function through(write, end) {
+  var s = Transform({ objectMode: true })
+  s._transform = write || function (buf, enc, next) {
+    next(null, buf)
+  }
+  s._flush = end
+  return s
+}
+
+function bundle(b, opts) {
+  var entries = []
+  return through(
+    function write(file, enc, next) {
+      var p = file.path
+      entries.push(p)
+      b.add(p)
+      next()
+    },
+    function (next) {
+      opts = opts || {}
+      opts.entries = opts.entries || entries
+      b.plugin(bundler, opts)
+
+      var self = this
+      b.bundle()
+        .on('data', function (file) {
+          self.push(file)
+        })
+        .on('end', next)
+    }
+  )
+}
+
+function watch(b, opts, wopts) {
+  var entries = []
+  return through(
+    function (file, enc, next) {
+      var p = file.path
+      entries.push(p)
+      b.add(p)
+      next()
+    },
+    function (next) {
+      opts = opts || {}
+      opts.entries = opts.entries || entries
+      b.plugin(bundler, opts)
+      b.plugin(watcher, wopts)
+
+      var self = this
+      b.on('bundle-stream', function (s) {
+        self.emit('bundle', s)
+      })
+      b.once('close', next)
+      b.start()
+    }
+  )
+}
+
+function src(patterns, opts) {
+  opts = opts || {}
+  if (opts.read == null) {
+    opts.read = false
+  }
+  return vfs.src(patterns, opts)
+}
+
+module.exports = {
+  bundler: bundler,
+  watcher: watcher,
+  bundle: bundle,
+  watch: watch,
+  dest: vfs.dest,
+  src: src,
+  create: require('browserify'),
+}
 
