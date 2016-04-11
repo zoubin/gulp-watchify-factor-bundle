@@ -77,6 +77,33 @@ gulp.task('watch', ['clean'], function () {
 
 ```
 
+The source directory:
+```
+example/src/
+├── node_modules
+│   └── color-map
+│       └── index.js
+└── page
+    ├── blue
+    │   └── index.js
+    └── red
+        └── index.js
+
+```
+
+The build directory:
+```
+⌘ tree example/build/
+example/build/
+├── common.js
+└── page
+    ├── blue
+    │   └── index.js
+    └── red
+        └── index.js
+
+```
+
 ## Exports
 
 ### create()
